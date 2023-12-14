@@ -2,38 +2,39 @@ import './App.css';
 import React, { useState, useEffect } from 'react';
 
 function App() {
+  const CLIENT_ID = "8e4f4998d37544d896788cd73160b147";
+  const REDIRECT_URI = "http://localhost:3000";
+  const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+  const RESPONSE_TYPE = "token";
+
   const [token, setToken] = useState('');
 
   useEffect(() => {
-    const clientId = "8e4f4998d37544d896788cd73160b147";
-    const clientSecret = "d6f5d1f2b50e46adba03b7aa756243c5";
+    const hash = window.location.hash;
+    let token = window.localStorage.getItem("token");
+    if (!token && hash) {
+      token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1]
 
-    fetch(
-      "https://accounts.spotify.com/api/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
-    })
-      .then(response => response.json())
-      .then(data => {
-        // Handle the response data
-        console.log(data);
-        setToken(data.access_token);
-        console.log(token);
-      })
-      .catch(error => {
-        // Handle errors
-        console.error('Error:', error);
-      });
+      window.location.hash = ""
+      window.localStorage.setItem("token", token)
+    }
+    setToken(token);
+    // console.log(token)
   }, []);
+
+  const logout = () => {
+    setToken("")
+    window.localStorage.removeItem("token")
+  }
 
   return (
     <div className="App">
-      <div>
+      <div className='Form'>
         <h1>Spotify React</h1>
-        <h2>Token Data: {token}</h2>
+        <div>{!token ?
+          <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}`}>Login
+            to Spotify</a>
+          : <button onClick={logout} className='logout'>Logout</button>}</div>
       </div>
     </div>
   );
