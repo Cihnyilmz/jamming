@@ -11,6 +11,7 @@ function App() {
   const [token, setToken] = useState('');
   const [searchKey, setSearchKey] = useState('');
   const [tracks, setTracks] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -71,6 +72,40 @@ function App() {
     )
   };
 
+  const getPlaylist = () => {
+    fetch('https://api.spotify.com/v1/me/playlists', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        setPlaylists(data.items);
+        // console.log(playlists.forEach(playlist => console.log(playlist.name))) => due to not async function it is not
+        // console.log(data.items);
+      })
+      .catch(error => {
+        console.error('Error fetching playlists:', error);
+      });
+  };
+
+  const renderPlaylist = () => {
+    return (
+      <div>
+        {playlists.map(playlist => (
+          <div key={playlist.id} className='playlist-result'>
+            {playlist.name.length ? (
+              <ul>
+                <li>{playlist.name}</li>
+              </ul>
+            ) : <p>Loading...</p>
+            }
+          </div>
+        ))}
+      </div>
+    )
+  };
+
   return (
     <div className="App">
       <div className='Form'>
@@ -79,19 +114,31 @@ function App() {
           <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}`}>Login
             to Spotify</a>
           : <button onClick={logout} className='logout'>Logout</button>}</div>
-
         <div>{token ? (
           <div>
             <form onSubmit={searchTracks}>
               <input type="text" value={searchKey} onChange={event => setSearchKey(event.target.value)} />
               <button>Search track</button>
             </form>
+            <form>
+              <button onClick={getPlaylist}>Your Spotify Playlists</button>
+            </form>
           </div>
         ) : (
           <p>Loading...</p>
         )}</div>
       </div>
-      <SearchResults />
+      <div className='tables'>
+        <div className='right-table table'>
+          <h2>Your Spotify Playlist's</h2>
+          {playlists.length > 0 && renderPlaylist()}
+        </div>
+        <div className='middle-table table'>
+          <SearchResults />
+        </div>
+        <div className='left-table table'>
+        </div>
+      </div>
     </div>
   );
 }
