@@ -12,6 +12,7 @@ function App() {
   const [searchKey, setSearchKey] = useState('');
   const [tracks, setTracks] = useState([]);
   const [playlists, setPlaylists] = useState([]);
+  const [newPlaylistTrack, setNewPlaylistTrack] = useState([]);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -49,6 +50,11 @@ function App() {
     console.log(tracks.forEach(track => console.log(track.name)))
   };
 
+  const addToPlaylist = (track) => {
+    setNewPlaylistTrack((prevTracks) => [...prevTracks, track]);
+    console.log(newPlaylistTrack.map(track => track.name));
+  };
+
   const SearchResults = () => {
     return (
       <div className='render-container'>
@@ -60,6 +66,9 @@ function App() {
                   {/* <li>ID: {track.id}</li> */}
                   <li>{track.artists[0].name} - {track.name} </li>
                   <li>Album: {track.album.name}</li>
+                  <button onClick={() => {
+                    addToPlaylist(track);
+                  }}>Add to Playlist</button>
                 </ul>
                 <img className='result-part' width={'30%'} src={track.album.images[0].url} />
               </div>
