@@ -13,13 +13,14 @@ function App() {
   const [tracks, setTracks] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [newPlaylistTrack, setNewPlaylistTrack] = useState([]);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [newPlaylistsID, setNewPlaylistsID] = useState('');
 
   useEffect(() => {
     const hash = window.location.hash;
     let token = window.localStorage.getItem("token");
     if (!token && hash) {
       token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1]
-
       window.location.hash = ""
       window.localStorage.setItem("token", token)
     }
@@ -28,8 +29,14 @@ function App() {
   }, []);
 
   const logout = () => {
-    setToken("")
-    window.localStorage.removeItem("token")
+    setToken('');
+    setSearchKey('');
+    setTracks([]);
+    setPlaylists([]);
+    setNewPlaylistTrack([]);
+    setNewPlaylistName('');
+    setNewPlaylistsID('');
+    window.localStorage.removeItem('token');
   };
 
   const searchTracks = async (e) => {
@@ -41,21 +48,35 @@ function App() {
       params: {
         q: `track: ${searchKey}`,
         type: 'track',
-        limit: 6
+        limit: 20
       }
     })
     // console.log(data);
     setTracks(data.tracks.items);
     // console.log(tracks.forEach(track => console.log(`The track is ${track.name} and the singer is ${track.artists[0].name} `)))
-    console.log(tracks.forEach(track => console.log(track.name)))
+    // console.log(tracks.forEach(track => console.log(track.name)))
   };
 
   const addToPlaylist = (track) => {
-    setNewPlaylistTrack((prevTracks) => [...prevTracks, track]);
-    console.log(newPlaylistTrack.map(track => track.name));
+    const endpoint = `https://api.spotify.com/v1/playlists/${newPlaylistsID}/tracks`;
+    fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        uris: [track.uri],
+      }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        setNewPlaylistTrack(prevTracks => [...prevTracks, data])
+        console.log('Added to playlist:', newPlaylistTrack);
+      })
   };
 
-  const SearchResults = () => {
+  const RenderSearchResults = () => {
     return (
       <div className='render-container'>
         {tracks.map(track => (
@@ -66,9 +87,9 @@ function App() {
                   {/* <li>ID: {track.id}</li> */}
                   <li>{track.artists[0].name} - {track.name} </li>
                   <li>Album: {track.album.name}</li>
-                  <button onClick={() => {
+                  {!newPlaylistsID == '' ? (<button onClick={() => {
                     addToPlaylist(track);
-                  }}>Add to Playlist</button>
+                  }}>Add to Playlist</button>) : <button className='non-clickable-button'>Add to Playlist</button>}
                 </ul>
                 <img className='result-part' width={'30%'} src={track.album.images[0].url} />
               </div>
@@ -93,19 +114,16 @@ function App() {
         // console.log(playlists.forEach(playlist => console.log(playlist.name))) => due to not async function it is not
         // console.log(data.items);
       })
-      .catch(error => {
-        console.error('Error fetching playlists:', error);
-      });
   };
 
   const renderPlaylist = () => {
     return (
-      <div>
+      <div className='render-container'>
         {playlists.map(playlist => (
           <div key={playlist.id} className='playlist-result'>
             {playlist.name.length ? (
-              <ul>
-                <li>{playlist.name}</li>
+              <ul className='result-part'>
+                <li >{playlist.name}</li>
               </ul>
             ) : <p>Loading...</p>
             }
@@ -115,13 +133,33 @@ function App() {
     )
   };
 
+  const createNewPlaylist = () => {
+    const url = 'https://api.spotify.com/v1/me/playlists';
+
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        'name': newPlaylistName,
+        'description': "Via API created playlist",
+        'public': false
+      })
+    };
+
+    fetch(url, requestOptions)
+      .then(response => response.json())
+      .then(data => {
+        setNewPlaylistsID(data.id);  // Set the playlist ID directly
+        console.log('Playlist ID created:', data.id);
+      })
+  };
+
   return (
     <div className="App">
       <div className='Form'>
-        <h1>Spotify React</h1>
+        <h1>Spotify App based on React and Spotify API</h1>
         <div>{!token ?
-          <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}`}>Login
-            to Spotify</a>
+          <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&scope=playlist-modify-private&redirect_uri=${REDIRECT_URI}`}>Login to Spotify</a>
           : <button onClick={logout} className='logout'>Logout</button>}</div>
         <div>{token ? (
           <div>
@@ -132,20 +170,22 @@ function App() {
             <form>
               <button onClick={getPlaylist}>Your Spotify Playlists</button>
             </form>
+            <form onSubmit={createNewPlaylist}>
+              <input type='text' value={newPlaylistName} onChange={event => setNewPlaylistName(event.target.value)} placeholder="Enter your new playlist's name" />
+              {newPlaylistsID === '' ? <button>Create your playlist</button> : <button className='non-clickable-button'>Create your playlist</button>}
+            </form>
           </div>
         ) : (
           <p>Loading...</p>
         )}</div>
       </div>
       <div className='tables'>
-        <div className='right-table table'>
+        <div className='left-table table'>
           <h2>Your Spotify Playlist's</h2>
           {playlists.length > 0 && renderPlaylist()}
         </div>
-        <div className='middle-table table'>
-          <SearchResults />
-        </div>
-        <div className='left-table table'>
+        <div className='right-table table'>
+          <RenderSearchResults />
         </div>
       </div>
     </div>
