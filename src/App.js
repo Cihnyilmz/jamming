@@ -1,6 +1,6 @@
 import './App.css';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import SearchBar from './SearchBar';
 
 function App() {
   const CLIENT_ID = "8e4f4998d37544d896788cd73160b147";
@@ -39,24 +39,6 @@ function App() {
     window.localStorage.removeItem('token');
   };
 
-  const searchTracks = async (e) => {
-    e.preventDefault();
-    const { data } = await axios.get('https://api.spotify.com/v1/search', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: {
-        q: `track: ${searchKey}`,
-        type: 'track',
-        limit: 20
-      }
-    })
-    // console.log(data);
-    setTracks(data.tracks.items);
-    // console.log(tracks.forEach(track => console.log(`The track is ${track.name} and the singer is ${track.artists[0].name} `)))
-    // console.log(tracks.forEach(track => console.log(track.name)))
-  };
-
   const addToPlaylist = (track) => {
     const endpoint = `https://api.spotify.com/v1/playlists/${newPlaylistsID}/tracks`;
     fetch(endpoint, {
@@ -74,32 +56,6 @@ function App() {
         setNewPlaylistTrack(prevTracks => [...prevTracks, data])
         console.log('Added to playlist:', newPlaylistTrack);
       })
-  };
-
-  const RenderSearchResults = () => {
-    return (
-      <div className='render-container'>
-        {tracks.map(track => (
-          <div key={track.id} className='search-results'>
-            {track.artists.length ? (
-              <div className='result-main'>
-                <ul className='result-part'>
-                  {/* <li>ID: {track.id}</li> */}
-                  <li>{track.artists[0].name} - {track.name} </li>
-                  <li>Album: {track.album.name}</li>
-                  {!newPlaylistsID == '' ? (<button onClick={() => {
-                    addToPlaylist(track);
-                  }}>Add to Playlist</button>) : <button className='non-clickable-button'>Add to Playlist</button>}
-                </ul>
-                <img className='result-part' width={'30%'} src={track.album.images[0].url} />
-              </div>
-            ) : <p>Loading...</p>
-            }
-          </div>
-        ))
-        }
-      </div >
-    )
   };
 
   const getPlaylist = () => {
@@ -160,32 +116,28 @@ function App() {
         <h1>Spotify App based on React and Spotify API</h1>
         <div>{!token ?
           <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&response_type=${RESPONSE_TYPE}&scope=playlist-modify-private&redirect_uri=${REDIRECT_URI}`}>Login to Spotify</a>
-          : <button onClick={logout} className='logout'>Logout</button>}</div>
-        <div>{token ? (
-          <div>
-            <form onSubmit={searchTracks}>
-              <input type="text" value={searchKey} onChange={event => setSearchKey(event.target.value)} />
-              <button>Search track</button>
-            </form>
-            <form>
-              <button onClick={getPlaylist}>Your Spotify Playlists</button>
-            </form>
-            <form onSubmit={createNewPlaylist}>
-              <input type='text' value={newPlaylistName} onChange={event => setNewPlaylistName(event.target.value)} placeholder="Enter your new playlist's name" />
-              {newPlaylistsID === '' ? <button>Create your playlist</button> : <button className='non-clickable-button'>Create your playlist</button>}
-            </form>
-          </div>
-        ) : (
-          <p>Loading...</p>
-        )}</div>
+          : <button onClick={logout} className='logout'>Logout</button>}
+        </div>
+        <div>
+          {token ? (
+            <div>
+              <SearchBar token={token} addToPlaylist={addToPlaylist} newPlaylistsID={newPlaylistsID} />
+              <form>
+                <button onClick={getPlaylist}>Your Spotify Playlists</button>
+              </form>
+              <form onSubmit={createNewPlaylist}>
+                <input type='text' value={newPlaylistName} onChange={event => setNewPlaylistName(event.target.value)} placeholder="Enter your new playlist's name" />
+                {newPlaylistsID === '' ? <button>Create your playlist</button> : <button className='non-clickable-button'>Create your playlist</button>}
+              </form>
+            </div>
+          ) : (
+            <p>Loading...</p>
+          )}</div>
       </div>
       <div className='tables'>
         <div className='left-table table'>
           <h2>Your Spotify Playlist's</h2>
           {playlists.length > 0 && renderPlaylist()}
-        </div>
-        <div className='right-table table'>
-          <RenderSearchResults />
         </div>
       </div>
     </div>
