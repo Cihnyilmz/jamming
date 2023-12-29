@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import SearchResults from './SearchResults';
 
-const SearchBar = ({ token, addToPlaylist, newPlaylistsID }) => {
+const SearchBar = ({ token, newPlaylistsID }) => {
     const [tracks, setTracks] = useState([]);
     const [searchKey, setSearchKey] = useState('');
 
@@ -24,13 +24,14 @@ const SearchBar = ({ token, addToPlaylist, newPlaylistsID }) => {
         // console.log(tracks.forEach(track => console.log(track.name)))
     };
 
+
     return (
         <div>
             <form onSubmit={searchTracks}>
                 <input type="text" value={searchKey} onChange={event => setSearchKey(event.target.value)} />
                 <button>Search track</button>
             </form>
-            <SearchResults newPlaylistsID={newPlaylistsID} addToPlaylist={addToPlaylist} tracks={tracks} />
+            <SearchResults token={token} tracks={tracks} newPlaylistsID={newPlaylistsID} />
         </div>
     )
 };
